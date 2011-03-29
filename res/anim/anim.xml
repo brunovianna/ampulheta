@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<translateAnimation xmlns:android="http://schemas.android.com/apk/res/android"
+        android:fromXDelta="5"
+        android:toXDelta="10"
+        android:fromYDelta="5"
+        android:toYDelta="20"
+        android:id="@+id/anim_id" />

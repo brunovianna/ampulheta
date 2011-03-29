@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="p_text">ampulheta</string>
+    <string name="app_name">ampulheta</string>
+	<string name="about">Gab Marcondes + Bruno Vianna</string>
+	<string-array name="poem_up">
+		<item>coisas</item>
+		<item>desacontecidas</item>
+		<item>avessos do havia</item>
+		<item>olho no olho do interminável</item>
+		<item>mãos dadas com o esquecimento</item>
+		<item>entre a poesia e a profecia</item>
+		<item>versos de papel de seda</item>
+		<item>fazendo</item>
+		<item>acrobacias</item>
+		<item>no tempo</item>
+	</string-array>
+	<string-array name="poem_down">
+		<item>Tempo</item>
+		<item>de acrobacias</item>
+		<item>seda, papel, versos</item>
+		<item>Profecia e poesia</item>
+		<item>esquecimento de mãos dadas</item>
+		<item>o interminável olho no olho</item>
+		<item>havia ao avesso</item>
+		<item>desacontecidas</item>
+		<item>coisas</item>
+	</string-array>
+</resources>
