@@ -15,14 +15,17 @@
 -->
 
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-	android:layout_width="fill_parent"
+	    android:orientation="vertical"
+	    android:layout_width="fill_parent"
 	android:layout_height="fill_parent">
 	
-	<com.brunovianna.Ampulheta.AmpulhetaView
+	<com.brunovianna.ampulheta.AmpulhetaView
 	 android:id="@+id/ampulheta"
 		android:layout_width="fill_parent"
-                android:layout_height="fill_parent"
-                tileSize="24"
+        android:layout_height="fill_parent"
+            tileSize="24"
                 />
-
+	<TableLayout android:id="@+id/tableLayout1" android:gravity="center|center_vertical|center_horizontal" android:layout_height="wrap_content" android:layout_width="wrap_content" android:layout_gravity="center_vertical|center_horizontal">
+		<Button android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="reiniciar" android:id="@+id/reiniciarButton"></Button>
+	</TableLayout>
 </FrameLayout>

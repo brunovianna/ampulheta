@@ -1,4 +1,4 @@
-package com.brunovianna.Ampulheta;
+package com.brunovianna.ampulheta;
 
 public class Letter {
 	public float x, y, vx, vy, ax, ay, angle, friction, finalX, finalY;

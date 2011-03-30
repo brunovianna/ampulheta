@@ -1,4 +1,4 @@
-package com.brunovianna.Ampulheta;
+package com.brunovianna.ampulheta;
 
 import java.util.ArrayList;
 import java.util.Iterator;
