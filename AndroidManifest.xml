@@ -3,7 +3,7 @@
       package="com.brunovianna.Ampulheta"
       android:versionCode="1"
       android:versionName="1.0">
-    <uses-sdk android:minSdkVersion="7"/>
+    
     <application android:label="@string/app_name" android:icon="@drawable/ampulhetaicon">
         <activity android:name=".Ampulheta"
                   android:label="@string/app_name"
@@ -17,6 +17,8 @@
 
     </application>
 
+<uses-sdk android:minSdkVersion="5"></uses-sdk>
+<uses-permission android:name="android.permission.VIBRATE"></uses-permission>
 <uses-permission android:name="android.permission.WAKE_LOCK"></uses-permission>
 
 </manifest> 
