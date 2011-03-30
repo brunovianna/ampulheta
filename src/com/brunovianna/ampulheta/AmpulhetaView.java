@@ -247,6 +247,8 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 
 	public void setSensorManager(SensorManager sm) {
 		mSensorManager = sm;
+		mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+
 	}
 
 	public void setWindowManager(WindowManager wm) {
@@ -282,7 +284,7 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 		 * of the acceleration. As an added benefit, we use less power and
 		 * CPU resources.
 		 */
-				mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_UI);
+		mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_UI);
 	}
 
 	public void stopSimulation() {
@@ -291,8 +293,7 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 
 	public AmpulhetaView(Context context, AttributeSet attrs) {
 		super(context, attrs);
-		//mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-
+		
 		// set the color and font size
 		paint = new Paint();
 		paint.setColor(Color.BLACK);
@@ -354,7 +355,7 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 
 	@Override
 	protected void onDraw(Canvas canvas) {
-		super.onDraw(canvas);
+		//super.onDraw(canvas);
 		/*
 		 * draw the background
 		 */
