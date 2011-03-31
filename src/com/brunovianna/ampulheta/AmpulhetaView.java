@@ -195,23 +195,47 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 		public void resolveCollisionWithSandclock() {
 			// TODO Auto-generated method stub
 
-			while (findColorUnder() == Color.BLACK) {
-				if (mPosX<0) {
+			int x = (int) ((mPosX * mMetersToPixelsX) + mXOrigin);
+			int y = (int) (- (mPosY * mMetersToPixelsY) + mYOrigin);
+
+			int intWidth = (int) (mWidth * mMetersToPixelsX);
+			int intHeight = (int) (mHeight * mMetersToPixelsY);
+			
+			if (mPosX<0) {
+				if (mPosY > 0) {
 					//above left
-					mPosX = mPosX + mPixelsToMetersX;
+					while (findColorUnder(x,y) == Color.BLACK) 	{
+						mPosX = mPosX + mPixelsToMetersX;
+						x = (int) ((mPosX * mMetersToPixelsX) + mXOrigin);
+					}
 				} else {
+					//under left
+					while (findColorUnder(x, y - intHeight) == Color.BLACK) {
+						mPosX = mPosX + mPixelsToMetersX;					
+						x = (int) ((mPosX * mMetersToPixelsX) + mXOrigin);
+					}
+				}
+			} else {
+				if (mPosY > 0) {
 					//above right
-					mPosX = mPosX - mPixelsToMetersX;
+					while (findColorUnder(x + intWidth, y) == Color.BLACK) { 	
+						mPosX = mPosX - mPixelsToMetersX;					
+						x = (int) ((mPosX * mMetersToPixelsX) + mXOrigin);
+					}
+				} else {
+					while (findColorUnder(x + intWidth, y - intHeight) == Color.BLACK) { 	
+						mPosX = mPosX - mPixelsToMetersX;					
+						x = (int) ((mPosX * mMetersToPixelsX) + mXOrigin);
+					}
 				}
 			}
+
 
 		}
 		
 		//find pixel color under
-		public int findColorUnder() {
+		public int findColorUnder(int x, int y) {
 			
-			int x = (int) ((mPosX * mMetersToPixelsX) + mXOrigin);
-			int y = (int) (- (mPosY * mMetersToPixelsY) + mYOrigin);
 			
 //			if ((x<0)||(y<0)||(x>=mResizedAmpulheta.getWidth()||y>=mResizedAmpulheta.getHeight())) {
 //				mPosY = 150 / mMetersToPixelsX;
@@ -609,9 +633,10 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 				 * of the screen and the unit is the meter.
 				 */
 
+				
 				final float x = xc + particleSystem.getPosX(i) * xs;
 				final float y = yc - particleSystem.getPosY(i) * ys;
-				//canvas.drawBitmap(bitmap, x, y, null);
+				
 				canvas.drawText(particleSystem.getString(i), x, y, paint);
 				canvas.drawPoint(x, y, redPaint);
 				//canvas.drawRect(x, y, x+letterCompensationWidth, y+letterCompensationHeight, paint);
