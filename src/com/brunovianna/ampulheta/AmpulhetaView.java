@@ -1,11 +1,13 @@
 package com.brunovianna.ampulheta;
 
 import android.content.Context;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.graphics.BitmapFactory.Options;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -15,7 +17,6 @@ import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.view.Display;
 import android.view.Surface;
-import android.view.View;
 import android.view.WindowManager;
 import android.widget.TextView;
 
@@ -35,6 +36,8 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 	private float mYDpi;
 	private float mMetersToPixelsX;
 	private float mMetersToPixelsY;
+	private float mPixelsToMetersX;
+	private float mPixelsToMetersY;
 	private Bitmap mBitmap;
 	private Bitmap mAmpulheta, mResizedAmpulheta = null;
 	private float mXOrigin;
@@ -47,14 +50,20 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 	private float mVerticalBound;
 	private float mWinWidth;
 	private float mWinHeight;
+	private float letterCompensationWidth;
+	private float letterCompensationHeight;
 
 	private SensorManager mSensorManager;
 	private WindowManager mWindowManager;
 	private Display mDisplay;
-	private final ParticleSystem mParticleSystem = new ParticleSystem();
+	private ParticleSystem mParticleSystem;
+	//private final LetterSystem mParticleSystem = new LetterSystem();
 
 	private Paint paint;
 
+	private CharSequence[] poemUp, poemDown;
+	private int numLetters = 0;
+	private boolean isPoemUp;
 
 	/*
 	 * Each of our particle holds its previous and current position, its
@@ -69,7 +78,11 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 		private float mLastPosX;
 		private float mLastPosY;
 		private float mOneMinusFriction;
-
+		public String mLetter, mLetterDown, mLetterUp;
+		private float mHeight, mWidth, mWidthDown, mHeightDown, mWidthUp, mHeightUp;
+		private boolean mIsUp;
+		public float mFinalX, mFinalY;
+		
 		Particle() {
 			// make each particle a bit different by randomizing its
 			// coefficient of friction
@@ -77,6 +90,48 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 			mOneMinusFriction = 1.0f - sFriction + r;
 		}
 
+		public void setLetterUp (String l, Paint p) {
+			mLetterUp = l;
+			Rect r = new Rect();
+			p.getTextBounds(mLetterUp, 0, 1, r);
+			mWidthUp = (float)r.width() * mPixelsToMetersX;
+			mHeightUp = (float)r.height()* mPixelsToMetersY;
+//			mHalfWidth = mWidth * 0.5f ;
+//			mHalfHeight = mHeight * 0.5f ;
+			
+			// position balls in the upper half
+			mPosY = 100 * mPixelsToMetersY;
+			
+		}
+		
+		public void setLetterDown (String l, Paint p) {
+			mLetterDown = l;
+			Rect r = new Rect();
+			p.getTextBounds(mLetterDown, 0, 1, r);
+			mWidthDown = (float)r.width() * mPixelsToMetersX;
+			mHeightDown = (float)r.height()* mPixelsToMetersY;
+//			mHalfWidth = mWidth * 0.5f ;
+//			mHalfHeight = mHeight * 0.5f ;
+			
+			// position balls in the upper half
+			mPosY = 100 * mPixelsToMetersY;
+			
+		}
+
+		public void setIsUp (boolean b) {
+			mIsUp = b;
+			if (b){
+				mLetter = mLetterUp;
+				mHeight = mHeightUp;
+				mWidth = mWidthUp;
+			} else {
+				mLetter = mLetterDown;
+				mHeight = mHeightDown;
+				mWidth = mWidthDown;
+
+			}
+		}
+		
 		public void computePhysics(float sx, float sy, float dT, float dTC) {
 			// Force of gravity applied to our virtual object
 			final float m = 1000.0f; // mass of our virtual object
@@ -134,7 +189,43 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 				mPosY = ymax;
 			} else if (y < -ymax) {
 				mPosY = -ymax;
+			}		
+		}
+
+		public void resolveCollisionWithSandclock() {
+			// TODO Auto-generated method stub
+
+			while (findColorUnder() == Color.BLACK) {
+				if (mPosX<0) {
+					//above left
+					mPosX = mPosX + 1/mMetersToPixelsX;
+				} else {
+					//above right
+					mPosX = mPosX - 1/mMetersToPixelsX;
+				}
 			}
+
+		}
+		
+		//find pixel color under
+		public int findColorUnder() {
+			
+			int x = (int) ((mPosX * mMetersToPixelsX) + mXOrigin);
+			int y = (int) (- (mPosY * mMetersToPixelsY) + mYOrigin);
+			
+//			if ((x<0)||(y<0)||(x>=mResizedAmpulheta.getWidth()||y>=mResizedAmpulheta.getHeight())) {
+//				mPosY = 150 / mMetersToPixelsX;
+//				mPosX = 0;
+//				return Color.WHITE;
+//				
+//			}
+
+			try {
+			int color =mResizedAmpulheta.getPixel(x, y);
+			return color;
+			} catch (IllegalArgumentException e) {
+			return Color.WHITE;	
+			}			
 		}
 	}
 
@@ -142,15 +233,83 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 	 * A particle system is just a collection of particles
 	 */
 	class ParticleSystem {
-		static final int NUM_PARTICLES = 15;
-		private Particle mBalls[] = new Particle[NUM_PARTICLES];
+		private Particle mBalls[];
 
-		ParticleSystem() {
+		ParticleSystem(int num) {
+			
+			mBalls = new Particle[num];
+			
+			// temporary
+			Paint p = new Paint();
+			p.setColor(Color.BLACK);
+			p.setTextSize(16);
+			p.setFakeBoldText(true);
+			p.setAntiAlias(true);
+
+			
 			/*
 			 * Initially our particles have no speed or acceleration
 			 */
 			for (int i = 0; i < mBalls.length; i++) {
 				mBalls[i] = new Particle();
+			}
+			
+			int ballCount = 0;
+			for (int i=0; i<poemUp.length;i++)
+				for (int j=0;j<poemUp[i].length();j++) {
+					mBalls[ballCount].setLetterUp(String.valueOf(poemUp[i].charAt(j)), p);
+					ballCount ++;
+				}
+			
+			ballCount = 0;
+			for (int i=0; i<poemDown.length;i++)
+				for (int j=0;j<poemDown[i].length();j++) {
+					mBalls[ballCount].setLetterDown(String.valueOf(poemDown[i].charAt(j)), p);
+					ballCount ++;
+				}	
+			for (int i = 0; i < mBalls.length; i++) {
+				mBalls[i].setIsUp(true);
+			}
+		
+			//routines to find the initial and final position - build the sentences
+			ballCount = 0;
+			float x = 0;
+			float y = 200 * mPixelsToMetersY;
+			Rect r = new Rect();
+			for (int i=0; i<poemUp.length; i++) {
+				p.getTextBounds(poemUp[i].toString(), 0, poemUp[i].length()-1, r);
+				x = - r.width() * 0.5f * mPixelsToMetersX;
+				for (int j= 0; j<poemUp[i].length(); j++) {
+					mBalls[ballCount].mPosX = x;
+					mBalls[ballCount].mPosY = y;
+					mBalls[ballCount].mLastPosX = x;
+					mBalls[ballCount].mLastPosY = y;
+					String measure = mBalls[ballCount].mLetterUp;
+					if (measure.compareTo(" ")==0)
+						measure = "|";
+					p.getTextBounds(measure, 0, 1, r);
+					x = x + r.width() * mPixelsToMetersX;
+					ballCount ++;
+				}
+				y = y - r.height() * mPixelsToMetersY * 1.2f;
+			}
+			
+			ballCount = 0;
+			y = 100 * mPixelsToMetersY;
+			for (int i=0; i<poemDown.length; i++) {
+				p.getTextBounds(poemDown[i].toString(), 0, poemDown[i].length()-1, r);
+				x = r.width() * 0.5f * mPixelsToMetersX;
+				for (int j= 0; j<poemDown[i].length(); j++) {
+					mBalls[ballCount].mFinalX = x;
+					mBalls[ballCount].mFinalY = y;
+					String measure = mBalls[ballCount].mLetterDown;
+					if (measure.compareTo(" ")==0)
+						measure = "|";
+					p.getTextBounds(measure, 0, 1, r);
+					x = x - r.width() * mPixelsToMetersX;
+					ballCount ++;
+				}
+				y = y + r.height() * mPixelsToMetersY * 1.2f;
 			}
 		}
 
@@ -158,7 +317,7 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 		 * Update the position of each particle in the system using the
 		 * Verlet integrator.
 		 */
-		private void updatePositions(float sx, float sy, long timestamp) {
+		protected void updatePositions(float sx, float sy, long timestamp) {
 			final long t = timestamp;
 			if (mLastT != 0) {
 				final float dT = (float) (t - mLastT) * (1.0f / 1000000000.0f);
@@ -205,29 +364,51 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 						float dy = ball.mPosY - curr.mPosY;
 						float dd = dx * dx + dy * dy;
 						// Check for collisions
-						if (dd <= sBallDiameter2) {
+						Boolean collided = false;
+						if (dx >= 0) {
+							if (dy >= 0) {
+								if ((dx <= curr.mWidth)&&(dy <= curr.mHeight ))
+									collided = true;
+							} else {
+								if ((dx <= curr.mWidth)&&(ball.mHeight >=- dy))
+									collided = true;
+							}
+						} else {
+							if (dy >= 0) {
+								if ((ball.mWidth >= -dx)&&(dy <=  curr.mHeight))
+									collided = true;
+							} else {
+								if ((ball.mWidth >= -dx)&&(ball.mHeight >=- dy))
+									collided = true;
+							}		
+						}
+						if (collided) {
+						
+						
+//						if (dd <= sBallDiameter2) {
 							/*
 							 * add a little bit of entropy, after nothing is
 							 * perfect in the universe.
 							 */
-							dx += ((float) Math.random() - 0.5f) * 0.0001f;
-							dy += ((float) Math.random() - 0.5f) * 0.0001f;
-							dd = dx * dx + dy * dy;
-							// simulate the spring
-							final float d = (float) Math.sqrt(dd);
-							final float c = (0.5f * (sBallDiameter - d)) / d;
-							curr.mPosX -= dx * c;
-							curr.mPosY -= dy * c;
-							ball.mPosX += dx * c;
-							ball.mPosY += dy * c;
-							more = true;
+//							dx += ((float) Math.random() - 0.5f) * 0.0001f;
+//							dy += ((float) Math.random() - 0.5f) * 0.0001f;
+//							dd = dx * dx + dy * dy;
+//							// simulate the spring
+//							final float d = (float) Math.sqrt(dd);
+//							final float c = (0.5f * (/*sBallDiameter*/ ball.mHeight - d)) / d;
+//							curr.mPosX -= dx * c;
+//							curr.mPosY -= dy * c;
+//							ball.mPosX += dx * c;
+//							ball.mPosY += dy * c;
+//							more = true;
 						}
 					}
 					/*
 					 * Finally make sure the particle doesn't intersects
 					 * with the walls.
 					 */
-					curr.resolveCollisionWithBounds();
+					//curr.resolveCollisionWithBounds();
+					//curr.resolveCollisionWithSandclock();
 				}
 			}
 		}
@@ -243,8 +424,16 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 		public float getPosY(int i) {
 			return mBalls[i].mPosY;
 		}
-	}
-
+		
+		public String getString(int i) {
+			if (isPoemUp)
+				return mBalls[i].mLetter;
+			else
+				return mBalls[i].mLetter;
+		}
+		
+	}	
+	
 	public void setSensorManager(SensorManager sm) {
 		mSensorManager = sm;
 		mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
@@ -262,6 +451,8 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 		mYDpi = metrics.ydpi;
 		mMetersToPixelsX = mXDpi / 0.0254f;
 		mMetersToPixelsY = mYDpi / 0.0254f;
+		mPixelsToMetersX = 1 / mMetersToPixelsX;
+		mPixelsToMetersY = 1 / mMetersToPixelsY;
 
 		// rescale the ball so it's about 0.5 cm on screen
 		Bitmap ball = BitmapFactory.decodeResource(getResources(), R.drawable.ball);
@@ -274,6 +465,9 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 		opts.inPreferredConfig = Bitmap.Config.RGB_565;
 		mAmpulheta = BitmapFactory.decodeResource(getResources(), R.drawable.ampulheta, opts);
 
+		mParticleSystem = new ParticleSystem(numLetters);
+
+		
 	}
 
 	public void startSimulation() {
@@ -288,12 +482,12 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 	}
 
 	public void stopSimulation() {
-		        mSensorManager.unregisterListener(this);
+		mSensorManager.unregisterListener(this);
 	}
 
 	public AmpulhetaView(Context context, AttributeSet attrs) {
 		super(context, attrs);
-		
+
 		// set the color and font size
 		paint = new Paint();
 		paint.setColor(Color.BLACK);
@@ -301,57 +495,84 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 		paint.setFakeBoldText(true);
 		paint.setAntiAlias(true);
 
+		Resources res = getResources();
+		
+		poemUp = res.getTextArray(R.array.poem_up);
+		poemDown = res.getTextArray(R.array.poem_down);
+		
+		//count letters
+		int poemUpCount = 0;
+		for (int i = 0; i<poemUp.length; i++) {
+			poemUpCount += poemUp[i].length();
+		}
+		//count letters
+		int poemDownCount = 0;
+		for (int i = 0; i<poemDown.length; i++) {
+			poemDownCount += poemDown[i].length();
+		}
+		
+		if (poemUpCount > poemDownCount) 
+			numLetters = poemUpCount;
+		else 
+			numLetters = poemDownCount;
+		
+		Rect letterBounds = new Rect();
+		paint.getTextBounds("K", 0, 1, letterBounds);
+		
+		letterCompensationWidth = letterBounds.width();
+		letterCompensationHeight = letterBounds.height();
+		
 	}
 
-	    @Override
-	    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-	        // compute the origin of the screen relative to the origin of
-	        // the bitmap
-	        mXOrigin = (w - mBitmap.getWidth()) * 0.5f;
-	        mYOrigin = (h - mBitmap.getHeight()) * 0.5f;
-	        mHorizontalBound = ((w / mMetersToPixelsX - sBallDiameter) * 0.5f);
-	        mVerticalBound = ((h / mMetersToPixelsY - sBallDiameter) * 0.5f);
-	        
-	        mResizedAmpulheta = Bitmap.createScaledBitmap(mAmpulheta, w, h, true);
-	        mWinWidth = w;
-	        mWinHeight = h;
-	    }
+	@Override
+	protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+		// compute the origin of the screen relative to the origin of
+		// the bitmap
+		mXOrigin = (w - mBitmap.getWidth()) * 0.5f;
+		mYOrigin = (h - mBitmap.getHeight()) * 0.5f;
+		mHorizontalBound = ((w * mPixelsToMetersX - sBallDiameter) * 0.5f);
+		mVerticalBound = ((h * mPixelsToMetersY - sBallDiameter) * 0.5f);
 
-	    @Override
-	    public void onSensorChanged(SensorEvent event) {
-	        if (event.sensor.getType() != Sensor.TYPE_ACCELEROMETER)
-	            return;
-	        /*
-	         * record the accelerometer data, the event's timestamp as well as
-	         * the current time. The latter is needed so we can calculate the
-	         * "present" time during rendering. In this application, we need to
-	         * take into account how the screen is rotated with respect to the
-	         * sensors (which always return data in a coordinate space aligned
-	         * to with the screen in its native orientation).
-	         */
-	
-	        switch (mDisplay.getRotation()) {
-	            case Surface.ROTATION_0:
-	                mSensorX = event.values[0];
-	                mSensorY = event.values[1];
-	                break;
-	            case Surface.ROTATION_90:
-	                mSensorX = -event.values[1];
-	                mSensorY = event.values[0];
-	                break;
-	            case Surface.ROTATION_180:
-	                mSensorX = -event.values[0];
-	                mSensorY = -event.values[1];
-	                break;
-	            case Surface.ROTATION_270:
-	                mSensorX = event.values[1];
-	                mSensorY = -event.values[0];
-	                break;
-	        }
-	
-	        mSensorTimeStamp = event.timestamp;
-	        mCpuTimeStamp = System.nanoTime();
-	    }
+		mResizedAmpulheta = Bitmap.createScaledBitmap(mAmpulheta, w, h, true);
+		mWinWidth = w;
+		mWinHeight = h;
+	}
+
+	@Override
+	public void onSensorChanged(SensorEvent event) {
+		if (event.sensor.getType() != Sensor.TYPE_ACCELEROMETER)
+			return;
+		/*
+		 * record the accelerometer data, the event's timestamp as well as
+		 * the current time. The latter is needed so we can calculate the
+		 * "present" time during rendering. In this application, we need to
+		 * take into account how the screen is rotated with respect to the
+		 * sensors (which always return data in a coordinate space aligned
+		 * to with the screen in its native orientation).
+		 */
+
+		switch (mDisplay.getRotation()) {
+		case Surface.ROTATION_0:
+			mSensorX = event.values[0];
+			mSensorY = event.values[1];
+			break;
+		case Surface.ROTATION_90:
+			mSensorX = -event.values[1];
+			mSensorY = event.values[0];
+			break;
+		case Surface.ROTATION_180:
+			mSensorX = -event.values[0];
+			mSensorY = -event.values[1];
+			break;
+		case Surface.ROTATION_270:
+			mSensorX = event.values[1];
+			mSensorY = -event.values[0];
+			break;
+		}
+
+		mSensorTimeStamp = event.timestamp;
+		mCpuTimeStamp = System.nanoTime();
+	}
 
 	@Override
 	protected void onDraw(Canvas canvas) {
@@ -370,8 +591,10 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 
 			final ParticleSystem particleSystem = mParticleSystem;
 			final long now = mSensorTimeStamp + (System.nanoTime() - mCpuTimeStamp);
-			final float sx = mSensorX;
-			final float sy = mSensorY;
+			final float sx = 0f;//mSensorX;
+			final float sy = 0.05f;//mSensorY;
+			
+			
 
 			particleSystem.update(sx, sy, now);
 
@@ -390,8 +613,9 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 
 				final float x = xc + particleSystem.getPosX(i) * xs;
 				final float y = yc - particleSystem.getPosY(i) * ys;
-				canvas.drawBitmap(bitmap, x, y, null);
-				canvas.drawText("K", x, y, paint);
+				//canvas.drawBitmap(bitmap, x, y, null);
+				canvas.drawText(particleSystem.getString(i), x+letterCompensationWidth, y+letterCompensationHeight, paint);
+				//canvas.drawRect(x, y, x+letterCompensationWidth, y+letterCompensationHeight, paint);
 			}
 
 			// and make sure to redraw asap
@@ -400,5 +624,5 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 
 	}
 	@Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {   }
+	public void onAccuracyChanged(Sensor sensor, int accuracy) {   }
 }

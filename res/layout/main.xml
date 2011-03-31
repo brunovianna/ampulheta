@@ -26,6 +26,6 @@
             tileSize="24"
                 />
 	<TableLayout android:id="@+id/tableLayout1" android:gravity="center|center_vertical|center_horizontal" android:layout_height="wrap_content" android:layout_width="wrap_content" android:layout_gravity="center_vertical|center_horizontal">
-		<Button android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="reiniciar" android:id="@+id/reiniciarButton"></Button>
+		<Button android:layout_width="wrap_content" android:visibility="invisible" android:layout_height="wrap_content" android:text="reiniciar" android:id="@+id/reiniciarButton"></Button>
 	</TableLayout>
 </FrameLayout>
