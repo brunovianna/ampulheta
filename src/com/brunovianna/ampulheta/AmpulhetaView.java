@@ -59,7 +59,7 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 	private ParticleSystem mParticleSystem;
 	//private final LetterSystem mParticleSystem = new LetterSystem();
 
-	private Paint paint;
+	private Paint paint, redPaint;
 
 	private CharSequence[] poemUp, poemDown;
 	private int numLetters = 0;
@@ -180,13 +180,13 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 			final float ymax = mVerticalBound;
 			final float x = mPosX;
 			final float y = mPosY;
-			if (x > xmax) {
-				mPosX = xmax;
+			if (x + mWidth > xmax) {
+				mPosX = xmax - mWidth;
 			} else if (x < -xmax) {
 				mPosX = -xmax;
 			}
-			if (y > ymax) {
-				mPosY = ymax;
+			if (y + mHeight > ymax) {
+				mPosY = ymax -mHeight;
 			} else if (y < -ymax) {
 				mPosY = -ymax;
 			}		
@@ -198,10 +198,10 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 			while (findColorUnder() == Color.BLACK) {
 				if (mPosX<0) {
 					//above left
-					mPosX = mPosX + 1/mMetersToPixelsX;
+					mPosX = mPosX + mPixelsToMetersX;
 				} else {
 					//above right
-					mPosX = mPosX - 1/mMetersToPixelsX;
+					mPosX = mPosX - mPixelsToMetersX;
 				}
 			}
 
@@ -358,31 +358,31 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 				more = false;
 				for (int i = 0; i < count; i++) {
 					Particle curr = mBalls[i];
-					for (int j = i + 1; j < count; j++) {
-						Particle ball = mBalls[j];
-						float dx = ball.mPosX - curr.mPosX;
-						float dy = ball.mPosY - curr.mPosY;
-						float dd = dx * dx + dy * dy;
-						// Check for collisions
-						Boolean collided = false;
-						if (dx >= 0) {
-							if (dy >= 0) {
-								if ((dx <= curr.mWidth)&&(dy <= curr.mHeight ))
-									collided = true;
-							} else {
-								if ((dx <= curr.mWidth)&&(ball.mHeight >=- dy))
-									collided = true;
-							}
-						} else {
-							if (dy >= 0) {
-								if ((ball.mWidth >= -dx)&&(dy <=  curr.mHeight))
-									collided = true;
-							} else {
-								if ((ball.mWidth >= -dx)&&(ball.mHeight >=- dy))
-									collided = true;
-							}		
-						}
-						if (collided) {
+//					for (int j = i + 1; j < count; j++) {
+//						Particle ball = mBalls[j];
+//						float dx = ball.mPosX - curr.mPosX;
+//						float dy = ball.mPosY - curr.mPosY;
+//						float dd = dx * dx + dy * dy;
+//						// Check for collisions
+//						Boolean collided = false;
+//						if (dx >= 0) {
+//							if (dy >= 0) {
+//								if ((dx <= curr.mWidth)&&(dy <= curr.mHeight ))
+//									collided = true;
+//							} else {
+//								if ((dx <= curr.mWidth)&&(ball.mHeight >=- dy))
+//									collided = true;
+//							}
+//						} else {
+//							if (dy >= 0) {
+//								if ((ball.mWidth >= -dx)&&(dy <=  curr.mHeight))
+//									collided = true;
+//							} else {
+//								if ((ball.mWidth >= -dx)&&(ball.mHeight >=- dy))
+//									collided = true;
+//							}		
+//						}
+//						if (collided) {
 						
 						
 //						if (dd <= sBallDiameter2) {
@@ -401,14 +401,14 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 //							ball.mPosX += dx * c;
 //							ball.mPosY += dy * c;
 //							more = true;
-						}
-					}
+//						}
+//					}
 					/*
 					 * Finally make sure the particle doesn't intersects
 					 * with the walls.
 					 */
-					//curr.resolveCollisionWithBounds();
-					//curr.resolveCollisionWithSandclock();
+					curr.resolveCollisionWithBounds();
+					curr.resolveCollisionWithSandclock();
 				}
 			}
 		}
@@ -495,6 +495,10 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 		paint.setFakeBoldText(true);
 		paint.setAntiAlias(true);
 
+		// set the color and font size
+		redPaint = new Paint();
+		redPaint.setColor(Color.RED);
+
 		Resources res = getResources();
 		
 		poemUp = res.getTextArray(R.array.poem_up);
@@ -516,22 +520,16 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 		else 
 			numLetters = poemDownCount;
 		
-		Rect letterBounds = new Rect();
-		paint.getTextBounds("K", 0, 1, letterBounds);
-		
-		letterCompensationWidth = letterBounds.width();
-		letterCompensationHeight = letterBounds.height();
-		
 	}
 
 	@Override
 	protected void onSizeChanged(int w, int h, int oldw, int oldh) {
 		// compute the origin of the screen relative to the origin of
 		// the bitmap
-		mXOrigin = (w - mBitmap.getWidth()) * 0.5f;
-		mYOrigin = (h - mBitmap.getHeight()) * 0.5f;
-		mHorizontalBound = ((w * mPixelsToMetersX - sBallDiameter) * 0.5f);
-		mVerticalBound = ((h * mPixelsToMetersY - sBallDiameter) * 0.5f);
+		mXOrigin = (w /*- mBitmap.getWidth()*/) * 0.5f;
+		mYOrigin = (h /*- mBitmap.getHeight()*/) * 0.5f;
+		mHorizontalBound = ((w * mPixelsToMetersX ) * 0.5f);
+		mVerticalBound = ((h* mPixelsToMetersY ) * 0.5f);
 
 		mResizedAmpulheta = Bitmap.createScaledBitmap(mAmpulheta, w, h, true);
 		mWinWidth = w;
@@ -614,7 +612,8 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 				final float x = xc + particleSystem.getPosX(i) * xs;
 				final float y = yc - particleSystem.getPosY(i) * ys;
 				//canvas.drawBitmap(bitmap, x, y, null);
-				canvas.drawText(particleSystem.getString(i), x+letterCompensationWidth, y+letterCompensationHeight, paint);
+				canvas.drawText(particleSystem.getString(i), x, y, paint);
+				canvas.drawPoint(x, y, redPaint);
 				//canvas.drawRect(x, y, x+letterCompensationWidth, y+letterCompensationHeight, paint);
 			}
 
