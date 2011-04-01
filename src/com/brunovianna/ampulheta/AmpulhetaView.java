@@ -82,7 +82,7 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 		private float mHeight, mWidth, mWidthDown, mHeightDown, mWidthUp, mHeightUp;
 		private boolean mIsUp;
 		public float mFinalX, mFinalY;
-		
+
 		Particle() {
 			// make each particle a bit different by randomizing its
 			// coefficient of friction
@@ -96,26 +96,26 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 			p.getTextBounds(mLetterUp, 0, 1, r);
 			mWidthUp = (float)r.width() * mPixelsToMetersX;
 			mHeightUp = (float)r.height()* mPixelsToMetersY;
-//			mHalfWidth = mWidth * 0.5f ;
-//			mHalfHeight = mHeight * 0.5f ;
-			
+			//			mHalfWidth = mWidth * 0.5f ;
+			//			mHalfHeight = mHeight * 0.5f ;
+
 			// position balls in the upper half
 			mPosY = 100 * mPixelsToMetersY;
-			
+
 		}
-		
+
 		public void setLetterDown (String l, Paint p) {
 			mLetterDown = l;
 			Rect r = new Rect();
 			p.getTextBounds(mLetterDown, 0, 1, r);
 			mWidthDown = (float)r.width() * mPixelsToMetersX;
 			mHeightDown = (float)r.height()* mPixelsToMetersY;
-//			mHalfWidth = mWidth * 0.5f ;
-//			mHalfHeight = mHeight * 0.5f ;
-			
+			//			mHalfWidth = mWidth * 0.5f ;
+			//			mHalfHeight = mHeight * 0.5f ;
+
 			// position balls in the upper half
 			mPosY = 100 * mPixelsToMetersY;
-			
+
 		}
 
 		public void setIsUp (boolean b) {
@@ -129,6 +129,16 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 				mHeight = mHeightDown;
 				mWidth = mWidthDown;
 
+			}
+		}
+
+		protected void updatePosition(float sx, float sy, long timestamp, float deltastamp) {
+			final float dT = deltastamp;
+			if (mLastT != 0) {
+				if (mLastDeltaT != 0) {
+					final float dTC = dT / mLastDeltaT;
+						computePhysics(sx, sy, dT, dTC);
+				}
 			}
 		}
 		
@@ -200,7 +210,7 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 
 			int intWidth = (int) (mWidth * mMetersToPixelsX);
 			int intHeight = (int) (mHeight * mMetersToPixelsY);
-			
+
 			if (mPosX<0) {
 				if (mPosY > 0) {
 					//above left
@@ -232,23 +242,23 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 
 
 		}
-		
+
 		//find pixel color under
 		public int findColorUnder(int x, int y) {
-			
-			
-//			if ((x<0)||(y<0)||(x>=mResizedAmpulheta.getWidth()||y>=mResizedAmpulheta.getHeight())) {
-//				mPosY = 150 / mMetersToPixelsX;
-//				mPosX = 0;
-//				return Color.WHITE;
-//				
-//			}
+
+
+			//			if ((x<0)||(y<0)||(x>=mResizedAmpulheta.getWidth()||y>=mResizedAmpulheta.getHeight())) {
+			//				mPosY = 150 / mMetersToPixelsX;
+			//				mPosX = 0;
+			//				return Color.WHITE;
+			//				
+			//			}
 
 			try {
-			int color =mResizedAmpulheta.getPixel(x, y);
-			return color;
+				int color =mResizedAmpulheta.getPixel(x, y);
+				return color;
 			} catch (IllegalArgumentException e) {
-			return Color.WHITE;	
+				return Color.WHITE;	
 			}			
 		}
 	}
@@ -260,9 +270,9 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 		private Particle mBalls[];
 
 		ParticleSystem(int num) {
-			
+
 			mBalls = new Particle[num];
-			
+
 			// temporary
 			Paint p = new Paint();
 			p.setColor(Color.BLACK);
@@ -270,31 +280,38 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 			p.setFakeBoldText(true);
 			p.setAntiAlias(true);
 
-			
+
 			/*
 			 * Initially our particles have no speed or acceleration
 			 */
 			for (int i = 0; i < mBalls.length; i++) {
 				mBalls[i] = new Particle();
 			}
-			
+
 			int ballCount = 0;
 			for (int i=0; i<poemUp.length;i++)
 				for (int j=0;j<poemUp[i].length();j++) {
 					mBalls[ballCount].setLetterUp(String.valueOf(poemUp[i].charAt(j)), p);
 					ballCount ++;
 				}
-			
+
 			ballCount = 0;
 			for (int i=0; i<poemDown.length;i++)
 				for (int j=0;j<poemDown[i].length();j++) {
 					mBalls[ballCount].setLetterDown(String.valueOf(poemDown[i].charAt(j)), p);
 					ballCount ++;
 				}	
+			//down poem is shorter
+			while (ballCount < mBalls.length ) {
+				mBalls[ballCount].setLetterDown(" ",p);
+				ballCount++;
+			}
+
+
 			for (int i = 0; i < mBalls.length; i++) {
 				mBalls[i].setIsUp(true);
 			}
-		
+
 			//routines to find the initial and final position - build the sentences
 			ballCount = 0;
 			float x = 0;
@@ -317,7 +334,7 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 				}
 				y = y - r.height() * mPixelsToMetersY * 1.2f;
 			}
-			
+
 			ballCount = 0;
 			y = 100 * mPixelsToMetersY;
 			for (int i=0; i<poemDown.length; i++) {
@@ -335,6 +352,14 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 				}
 				y = y + r.height() * mPixelsToMetersY * 1.2f;
 			}
+
+			//down poem is shorter
+			while (ballCount < mBalls.length ) {
+				mBalls[ballCount].mFinalX = -200;
+				mBalls[ballCount].mFinalY = -200;
+				ballCount++;
+			}
+
 		}
 
 		/*
@@ -358,83 +383,38 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 			mLastT = t;
 		}
 
+		
 		/*
 		 * Performs one iteration of the simulation. First updating the
 		 * position of all the particles and resolving the constraints and
 		 * collisions.
 		 */
 		public void update(float sx, float sy, long now) {
-			// update the system's positions
-			updatePositions(sx, sy, now);
-
-			// We do no more than a limited number of iterations
-			final int NUM_MAX_ITERATIONS = 10;
-
-			/*
-			 * Resolve collisions, each particle is tested against every
-			 * other particle for collision. If a collision is detected the
-			 * particle is moved away using a virtual spring of infinite
-			 * stiffness.
-			 */
-			boolean more = true;
+			
 			final int count = mBalls.length;
-			for (int k = 0; k < NUM_MAX_ITERATIONS && more; k++) {
-				more = false;
-				for (int i = 0; i < count; i++) {
-					Particle curr = mBalls[i];
-//					for (int j = i + 1; j < count; j++) {
-//						Particle ball = mBalls[j];
-//						float dx = ball.mPosX - curr.mPosX;
-//						float dy = ball.mPosY - curr.mPosY;
-//						float dd = dx * dx + dy * dy;
-//						// Check for collisions
-//						Boolean collided = false;
-//						if (dx >= 0) {
-//							if (dy >= 0) {
-//								if ((dx <= curr.mWidth)&&(dy <= curr.mHeight ))
-//									collided = true;
-//							} else {
-//								if ((dx <= curr.mWidth)&&(ball.mHeight >=- dy))
-//									collided = true;
-//							}
-//						} else {
-//							if (dy >= 0) {
-//								if ((ball.mWidth >= -dx)&&(dy <=  curr.mHeight))
-//									collided = true;
-//							} else {
-//								if ((ball.mWidth >= -dx)&&(ball.mHeight >=- dy))
-//									collided = true;
-//							}		
-//						}
-//						if (collided) {
-						
-						
-//						if (dd <= sBallDiameter2) {
-							/*
-							 * add a little bit of entropy, after nothing is
-							 * perfect in the universe.
-							 */
-//							dx += ((float) Math.random() - 0.5f) * 0.0001f;
-//							dy += ((float) Math.random() - 0.5f) * 0.0001f;
-//							dd = dx * dx + dy * dy;
-//							// simulate the spring
-//							final float d = (float) Math.sqrt(dd);
-//							final float c = (0.5f * (/*sBallDiameter*/ ball.mHeight - d)) / d;
-//							curr.mPosX -= dx * c;
-//							curr.mPosY -= dy * c;
-//							ball.mPosX += dx * c;
-//							ball.mPosY += dy * c;
-//							more = true;
-//						}
-//					}
-					/*
-					 * Finally make sure the particle doesn't intersects
-					 * with the walls.
-					 */
-					curr.resolveCollisionWithBounds();
-					curr.resolveCollisionWithSandclock();
-				}
+			final float dT = (float) (now - mLastT) * (1.0f / 1000000000.0f);
+			for (int i = 0; i < count; i++) {
+				Particle curr = mBalls[i];
+				curr.updatePosition(sx, sy, now, dT);
+			}	
+			mLastT = now;
+			mLastDeltaT = dT;
+			
+			boolean allDown = true;
+			for (int i = 0; i < count; i++) {
+				Particle curr = mBalls[i];
+				// update the system's positions
+				curr.resolveCollisionWithBounds();
+				curr.resolveCollisionWithSandclock();
+
+				//start changing the poem
+				if (curr.mPosY < 0)
+					curr.setIsUp(false);
+				else
+					allDown = false;
 			}
+			if (allDown)
+				isPoemUp = false;
 		}
 
 		public int getParticleCount() {
@@ -448,16 +428,16 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 		public float getPosY(int i) {
 			return mBalls[i].mPosY;
 		}
-		
+
 		public String getString(int i) {
 			if (isPoemUp)
 				return mBalls[i].mLetter;
 			else
 				return mBalls[i].mLetter;
 		}
-		
+
 	}	
-	
+
 	public void setSensorManager(SensorManager sm) {
 		mSensorManager = sm;
 		mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
@@ -491,7 +471,7 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 
 		mParticleSystem = new ParticleSystem(numLetters);
 
-		
+
 	}
 
 	public void startSimulation() {
@@ -524,10 +504,10 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 		redPaint.setColor(Color.RED);
 
 		Resources res = getResources();
-		
+
 		poemUp = res.getTextArray(R.array.poem_up);
 		poemDown = res.getTextArray(R.array.poem_down);
-		
+
 		//count letters
 		int poemUpCount = 0;
 		for (int i = 0; i<poemUp.length; i++) {
@@ -538,12 +518,12 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 		for (int i = 0; i<poemDown.length; i++) {
 			poemDownCount += poemDown[i].length();
 		}
-		
+
 		if (poemUpCount > poemDownCount) 
 			numLetters = poemUpCount;
 		else 
 			numLetters = poemDownCount;
-		
+
 	}
 
 	@Override
@@ -615,8 +595,8 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 			final long now = mSensorTimeStamp + (System.nanoTime() - mCpuTimeStamp);
 			final float sx = 0f;//mSensorX;
 			final float sy = 0.05f;//mSensorY;
-			
-			
+
+
 
 			particleSystem.update(sx, sy, now);
 
@@ -633,10 +613,10 @@ class AmpulhetaView extends TextView implements SensorEventListener {
 				 * of the screen and the unit is the meter.
 				 */
 
-				
+
 				final float x = xc + particleSystem.getPosX(i) * xs;
 				final float y = yc - particleSystem.getPosY(i) * ys;
-				
+
 				canvas.drawText(particleSystem.getString(i), x, y, paint);
 				canvas.drawPoint(x, y, redPaint);
 				//canvas.drawRect(x, y, x+letterCompensationWidth, y+letterCompensationHeight, paint);
